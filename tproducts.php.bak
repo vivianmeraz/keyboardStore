@@ -1,0 +1,203 @@
+<?php
+
+$num_products_on_each_page = 15;
+$current_page = isset($_GET['p']) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 1;
+if (isset($_GET['category'])){
+	$category = $_GET['category'];
+}
+if (isset($_GET['brand'])){
+	$brand = $_GET['brand'];
+}
+$sortby = isset($_GET['sortby']) ? $_GET['sortby'] : 'releasedate:desc';
+
+switch ($sortby){
+    case 'availability':
+        $order = 'product_Quantity > 0 AND totalSold';
+        break;
+    case 'releasedate:asc':
+	    $order = 'dateAdded';
+        break;
+    case 'releasedate:desc':
+        $order = 'dateAdded';
+        break;
+    case 'price:asc':
+        $order = 'product_BasePrice';
+        break;
+    case 'price:desc':
+        $order = 'product_BasePrice';
+        break;
+    default:
+        $order = 'totalSold';
+                        
+}
+
+$direction = 'DESC';
+
+if ($sortby == 'releasedate:asc' || $sortby == 'price:asc'){
+    $direction = 'ASC';
+}
+
+if (isset($_GET['category']) && isset($_GET['brand'])){
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE WHERE product_Type = ? AND product_BrandName = ? ORDER BY ? ? LIMIT ?, ?');
+	$stmt->bindValue(1, $category, PDO::PARAM_STR);
+	$stmt->bindValue(2, $brand, PDO::PARAM_STR);
+	$stmt->bindValue(3, $order, PDO::PARAM_STR);
+	$stmt->bindValue(4, $direction, PDO::PARAM_STR);
+	$stmt->bindValue(5, (($current_page - 1) * $num_products_on_each_page), PDO::PARAM_INT);
+	$stmt->bindValue(6, $num_products_on_each_page, PDO::PARAM_INT);
+	$tagurl = '&category='.$category.'&brand='.$brand;
+}
+else if(isset($_GET['category'])){
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE WHERE product_Type = ? ORDER BY ? ? LIMIT ?, ?');
+	$stmt->bindValue(1, $category, PDO::PARAM_STR);
+	$stmt->bindValue(2, $order, PDO::PARAM_STR);
+	$stmt->bindValue(3, $direction, PDO::PARAM_STR);
+	$stmt->bindValue(4, (($current_page - 1) * $num_products_on_each_page), PDO::PARAM_INT);
+	$stmt->bindValue(5, $num_products_on_each_page, PDO::PARAM_INT);
+	$tagurl = '&category='.$category;
+}
+else if(isset($_GET['brand'])){
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE WHERE product_BrandName = ? ORDER BY ? ? LIMIT ?, ?');
+	$stmt->bindValue(1, $brand, PDO::PARAM_STR);
+	$stmt->bindValue(2, $order, PDO::PARAM_STR);
+	$stmt->bindValue(3, $direction, PDO::PARAM_STR);
+	$stmt->bindValue(4, (($current_page - 1) * $num_products_on_each_page), PDO::PARAM_INT);
+	$stmt->bindValue(5, $num_products_on_each_page, PDO::PARAM_INT);
+	$tagurl = "&brand=".$brand;
+}
+else{
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE ORDER BY ? ? LIMIT ?, ?;');
+	$stmt->bindValue(1, $order, PDO::PARAM_STR);
+	$stmt->bindValue(2, $direction, PDO::PARAM_STR);
+	$stmt->bindValue(3, (($current_page - 1) * $num_products_on_each_page), PDO::PARAM_INT);
+	$stmt->bindValue(4, $num_products_on_each_page, PDO::PARAM_INT);
+	$tagurl = '';
+}
+
+$stmt->execute();
+
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$total_products = $pdo->query('SELECT * FROM PRODUCT_TABLE')->rowCount();
+?>
+
+<?=site_header('Products');?>
+
+<div class="container pt-5">
+    <div class="row pt-5">
+        <div class="sort-by align-right">
+            <b>Sort By:</b>
+            <div class="dropdown">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <?php if ($sortby == 'availability'): ?>
+                        In Stock
+                    <?php endif; ?>
+                    <?php if ($sortby == 'releasedate:asc'): ?>
+                        Release Date: Newest to Oldest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'releasedate:desc'): ?>
+                        Release Date: Oldest to Newest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'price:asc'): ?>
+                        Price: Highest to Lowest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'price:desc'): ?>
+                        Price: Lowest to Highest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'bestsellers'): ?>
+                        Best Sellers
+                    <?php endif; ?>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="index.php?page=products<?=$tagurl?>&sortby=availability">In Stock</a></li>
+                    <li><a class="dropdown-item" href="index.php?page=products<?=$tagurl?>&sortby=releasedate:asc">Release Date: Newest to Oldest</a></li>
+                    <li><a class="dropdown-item" href="index.php?page=products<?=$tagurl?>&sortby=releasedate:desc">Release Date: Oldest to Newest</a></li>
+                    <li><a class="dropdown-item" href="index.php?page=products<?=$tagurl?>&sortby=price:asc">Price: Highest to Lowest</a></li>
+                    <li><a class="dropdown-item" href="index.php?page=products<?=$tagurl?>&sortby=price:desc">Price: Lowest to Highest</a></li>
+                    <li><a class="dropdown-item" href="index.php?page=products<?=$tagurl?>&sortby=bestsellers">Best Sellers</a></li>
+                </ul>
+            </div> 
+        </div>
+	</div>
+	<div class="row pt-2">
+	    <div class="col-sm-4">
+            <div class="accordion" id="productsAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            Brands
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#productsAccordion">
+                        <div class="accordion-body">
+                            <a class="dropdown-item" href="index.php?page=products&brand=Acer">Acer</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Keychron">Keychron</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Logitech">Logitech</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Perixx">Perixx</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Razer">Razer</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Redragon">Redragon</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Steelseries">Steelseries</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Type
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#productsAccordion">
+                        <div class="accordion-body">
+                            <a class="dropdown-item" href="index.php?page=products&category=keyboard">Keyboards</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=mouse">Mice</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=switch">Switches</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=keycap">Keycaps</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            Accordion Item #3
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#productsAccordion">
+                        <div class="accordion-body">
+                            <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+                        </div>
+                    </div>
+                </div>
+            </div>
+	    </div>
+	    <div class="col-sm-8">
+            <div class="row">
+                <?php foreach ($products as $product): ?>
+                    <div class="col-sm-3 pt-2">
+                        <a href="index.php?page=item&id=<?=$product['product_ID']?>" class="item">
+                            <div class="row">
+                                <img src="assets/img/<?=$product['image_Link']?>" width="200" height="200" alt="<?=$product['product_BrandName'].$product['product_Title']?>">
+                            </div>
+                            <div class="row">
+                                <span class="name"><?=$product['product_BrandName']?> <?=$product['product_Title']?></span>
+                                <span class="price">
+                                    &dollar;<?=$product['product_BasePrice']?>
+                                </span>
+                            </div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+	</div>
+    <div class="row">
+        <div class="buttons">
+            <?php if ($current_page > 1): ?>
+            <a href="index.php?page=products&p=<?=$current_page - 1?>&category=<?=$category?>&brand=<?=$brand?>&sortby=<?=$sortby?>">Prev</a>
+            <?php endif; ?>
+            <a href="index.php?page=products&p=<?=$current_page?>&category=<?=$category?>&brand=<?=$brand?>&sortby=<?=$sortby?>"><?$current_page?></a>
+            <?php if ($total_products > ($current_page * $num_products_on_each_page) - $num_products_on_each_page + count($products)): ?>
+            <a href="index.php?page=products&p=<?=$current_page + 1?>&category=<?=$category?>&brand=<?=$brand?>&sortby=<?=$sortby?>">Next</a>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+<?=site_footer()?>

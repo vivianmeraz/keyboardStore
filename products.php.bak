@@ -1,0 +1,241 @@
+<?php
+
+$tagurl = '';
+
+if (isset($_GET['category'])){
+	$category = $_GET['category'];
+    $tagurl .= '&category=' . $category;
+}
+if (isset($_GET['brand'])){
+	$brand = $_GET['brand'];
+    $tagurl .= '&brand=' . $brand;
+}
+$sortby = isset($_GET['sortby']) ? $_GET['sortby'] : 'releasedate';
+
+if ($sortby == 'availability'){
+    $order = 'product_Quantity > 0 AND total_Sold DESC';
+}
+else if($sortby == 'bestsellers'){
+    $order = 'total_Sold DESC';
+}
+else if($sortby == 'price:asc'){
+    $order = 'product_BasePrice DESC';
+}
+else if($sortby == 'price:desc'){
+    $order = 'product_BasePrice DESC';
+}
+else{
+    $order = 'date_Added DESC';
+}
+
+$direction = 'DESC';
+
+if ($sortby == 'price:asc'){
+    $direction = 'ASC';
+}
+
+if (isset($_GET['category']) && isset($_GET['brand'])){
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE WHERE product_Type = ? AND product_BrandName = ? ORDER BY ?');
+	$stmt->bindValue(1, $category, PDO::PARAM_STR);
+	$stmt->bindValue(2, $brand, PDO::PARAM_STR);
+	$stmt->bindValue(3, $order, PDO::PARAM_STR);
+	#$stmt->bindValue(4, $direction, PDO::PARAM_STR);
+}
+else if(isset($_GET['category'])){
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE WHERE product_Type = ? ORDER BY ?');
+	$stmt->bindValue(1, $category, PDO::PARAM_STR);
+	$stmt->bindValue(2, $order, PDO::PARAM_STR);
+	#$stmt->bindValue(3, $direction, PDO::PARAM_STR);
+}
+else if(isset($_GET['brand'])){
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE WHERE product_BrandName = ? ORDER BY ?');
+	$stmt->bindValue(1, $brand, PDO::PARAM_STR);
+	$stmt->bindValue(2, $order, PDO::PARAM_STR);
+	#$stmt->bindValue(3, $direction, PDO::PARAM_STR);
+}
+else{
+	$stmt = $pdo->prepare('SELECT * FROM PRODUCT_TABLE ORDER BY ?');
+	$stmt->bindValue(1, $order, PDO::PARAM_STR);
+	#$stmt->bindValue(2, $direction, PDO::PARAM_STR);
+}
+
+$stmt->execute();
+
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
+
+<?=template_header('products');?>
+
+<div class="container pt-5">
+    <div class="row pt-5">
+        <div class="sort-by align-right">
+            <b>Sort By:</b>
+            <div class="dropdown">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    <?php if ($sortby == 'availability'): ?>
+                        In Stock
+                    <?php endif; ?>
+                    <?php if ($sortby == 'releasedate'): ?>
+                        Release Date: Newest to Oldest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'price:asc'): ?>
+                        Price: Lowest to Highest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'price:desc'): ?>
+                        Price: Highest to Lowest
+                    <?php endif; ?>
+                    <?php if ($sortby == 'bestsellers'): ?>
+                        Best Sellers
+                    <?php endif; ?>
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <?php if (isset($category) && isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&brand=<?=$brand?>&sortby=availability">In Stock</a>
+                        <?php endif; ?>
+                        <?php if (isset($category)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&sortby=availability">In Stock</a>
+                        <?php endif; ?>
+                        <?php if (isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&brand=<?=$brand?>&sortby=availability">In Stock</a>
+                        <?php endif; ?>
+                        <?php if (!isset($category) && !isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&sortby=availability">In Stock</a>
+                        <?php endif; ?>
+                    </li>
+                    <li>
+                        <?php if (isset($category) && isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&brand=<?=$brand?>&sortby=releasedate">New Releases</a>
+                        <?php endif; ?>
+                        <?php if (isset($category)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&sortby=releasedate">New Releases</a>
+                        <?php endif; ?>
+                        <?php if (isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&brand=<?=$brand?>&sortby=releasedate">New Releases</a>
+                        <?php endif; ?>
+                        <?php if (!isset($category) && !isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&sortby=releasedate">New Releases</a>
+                        <?php endif; ?>
+                    </li>
+                    <li>
+                        <?php if (isset($category) && isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&brand=<?=$brand?>&sortby=price:asc">Price: Lowest to Highest</a>
+                        <?php endif; ?>
+                        <?php if (isset($category)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&sortby=price:asc">Price: Lowest to Highest</a>
+                        <?php endif; ?>
+                        <?php if (isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&brand=<?=$brand?>&sortby=price:asc">Price: Lowest to Highest</a>
+                        <?php endif; ?>
+                        <?php if (!isset($category) && !isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&sortby=price:asc">Price: Lowest to Highest</a>
+                        <?php endif; ?>
+                    </li>
+                    <li>
+                        <?php if (isset($category) && isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&brand=<?=$brand?>&sortby=price:desc">Price: Highest to Lowest</a>
+                        <?php endif; ?>
+                        <?php if (isset($category)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&sortby=price:desc">Price: Highest to Lowest</a>
+                        <?php endif; ?>
+                        <?php if (isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&brand=<?=$brand?>&sortby=price:desc">Price: Highest to Lowest</a>
+                        <?php endif; ?>
+                        <?php if (!isset($category) && !isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&sortby=price:desc">Price: Highest to Lowest</a>
+                        <?php endif; ?>
+                    </li>
+                    <li>
+                        <?php if (isset($category) && isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&brand=<?=$brand?>&sortby=bestsellers">Best Sellers</a>
+                        <?php endif; ?>
+                        <?php if (isset($category)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&category=<?=$category?>&sortby=bestsellers">Best Sellers</a>
+                        <?php endif; ?>
+                        <?php if (isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&brand=<?=$brand?>&sortby=bestsellers">Best Sellers</a>
+                        <?php endif; ?>
+                        <?php if (!isset($category) && !isset($brand)): ?>
+                            <a class="dropdown-item" href="index.php?page=products&sortby=bestsellers">Best Sellers</a>
+                        <?php endif; ?>
+                    </li>
+                </ul>
+            </div> 
+        </div>
+	</div>
+	<div class="row pt-2">
+	    <div class="col-sm-4">
+            <div class="accordion" id="productsAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            Brands
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#productsAccordion">
+                        <div class="accordion-body">
+                            <a class="dropdown-item" href="index.php?page=products&brand=Acer">Acer</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Keychron">Keychron</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Logitech">Logitech</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Perixx">Perixx</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Razer">Razer</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Redragon">Redragon</a>
+                            <a class="dropdown-item" href="index.php?page=products&brand=Steelseries">Steelseries</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+                            Type
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse show" aria-labelledby="headingTwo" data-bs-parent="#productsAccordion">
+                        <div class="accordion-body">
+                            <a class="dropdown-item" href="index.php?page=products&category=keyboard">Keyboards</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=mouse">Mice</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=switch">Switches</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=keycap">Keycaps</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="true" aria-controls="collapseThree">
+                            Price
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse show" aria-labelledby="headingThree" data-bs-parent="#productsAccordion">
+                        <div class="accordion-body">
+                            <!-- range= 1 - 5 -->
+                            <a class="dropdown-item" href="index.php?page=products&category=keyboard">$0 - $25</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=mouse">$26 - $50</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=switch">$51 - $75</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=keycap">$76 - $100</a>
+                            <a class="dropdown-item" href="index.php?page=products&category=keycap">$100+</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+	    </div>
+	    <div class="col-sm-8">
+            <div class="row gx-5 gy-5">
+                <?php foreach ($products as $product): ?>
+                    <div class="col-sm-4">
+                        <a href="index.php?page=item&id=<?=$product['product_ID']?>" class="item">
+                            <div class="row">
+                                <img src="assets/img/<?=$product['image_Link']?>" width="250" height="250" alt="<?=$product['product_BrandName'].$product['product_Title']?>">
+                            </div>
+                            <div class="row">
+                                <span class="name"><?=$product['product_BrandName']?></span>
+                                <span class="name"><?=$product['product_Title']?></span>
+                                <span class="name">&dollar;<?=$product['product_BasePrice']?></span>
+                            </div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+	</div>
+</div>
+<?=template_footer()?>
